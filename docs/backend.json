@@ -1,0 +1,533 @@
+{
+  "entities": {
+    "Machine": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Machine",
+      "type": "object",
+      "description": "Represents a lab machine with its properties and status.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Machine entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the machine."
+        },
+        "clusterId": {
+          "type": "string",
+          "description": "Reference to Cluster. (Relationship: Cluster 1:N Machine). Represents the cluster to which the machine belongs."
+        },
+        "brand": {
+          "type": "string",
+          "description": "Brand of the machine."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model of the machine."
+        },
+        "location": {
+          "type": "string",
+          "description": "Physical location of the machine within the lab."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current operational status of the machine (e.g., Safe, Unsafe, Maintenance)."
+        },
+        "lastInspectionDate": {
+          "type": "string",
+          "description": "Date of the last inspection of the machine.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "clusterId",
+        "brand",
+        "model",
+        "status"
+      ]
+    },
+    "SensorData": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SensorData",
+      "type": "object",
+      "description": "Represents sensor data readings from a specific machine at a specific time.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SensorData entity."
+        },
+        "machineId": {
+          "type": "string",
+          "description": "Reference to Machine. (Relationship: Machine 1:N SensorData). The machine this sensor data belongs to."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the sensor data was recorded.",
+          "format": "date-time"
+        },
+        "vibration": {
+          "type": "number",
+          "description": "Vibration reading from the sensor."
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Temperature reading from the sensor."
+        },
+        "humidity": {
+          "type": "number",
+          "description": "Humidity reading from the sensor."
+        },
+        "voltage": {
+          "type": "number",
+          "description": "Voltage reading from the sensor."
+        },
+        "current": {
+          "type": "number",
+          "description": "Current reading from the sensor."
+        },
+        "earthLineStatus": {
+          "type": "boolean",
+          "description": "Status of the earth line connection (true = OK, false = not OK)."
+        }
+      },
+      "required": [
+        "id",
+        "machineId",
+        "timestamp",
+        "vibration",
+        "temperature",
+        "humidity",
+        "voltage",
+        "current",
+        "earthLineStatus"
+      ]
+    },
+    "Alert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Alert",
+      "type": "object",
+      "description": "Represents an alert generated based on sensor data exceeding predefined thresholds.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Alert entity."
+        },
+        "machineId": {
+          "type": "string",
+          "description": "Reference to Machine. (Relationship: Machine 1:N Alert). The machine that triggered the alert."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the alert was generated.",
+          "format": "date-time"
+        },
+        "alertType": {
+          "type": "string",
+          "description": "Type of alert (e.g., High Vibration, High Temperature)."
+        },
+        "severity": {
+          "type": "string",
+          "description": "Severity level of the alert (e.g., Low, Medium, High)."
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed message describing the alert."
+        },
+        "isResolved": {
+          "type": "boolean",
+          "description": "Indicates whether the alert has been resolved (true) or not (false)."
+        }
+      },
+      "required": [
+        "id",
+        "machineId",
+        "timestamp",
+        "alertType",
+        "severity",
+        "message",
+        "isResolved"
+      ]
+    },
+    "MaintenanceTask": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MaintenanceTask",
+      "type": "object",
+      "description": "Represents a maintenance task scheduled for a specific machine.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the MaintenanceTask entity."
+        },
+        "machineId": {
+          "type": "string",
+          "description": "Reference to Machine. (Relationship: Machine 1:N MaintenanceTask). The machine the task is scheduled for."
+        },
+        "scheduledDate": {
+          "type": "string",
+          "description": "Date the maintenance task is scheduled to be performed.",
+          "format": "date-time"
+        },
+        "taskType": {
+          "type": "string",
+          "description": "Type of maintenance task (e.g., Inspection, Lubrication, Repair)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the maintenance task."
+        },
+        "assignedTechnicianId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N MaintenanceTask). The technician assigned to perform the task."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the maintenance task (e.g., Pending, In Progress, Completed)."
+        }
+      },
+      "required": [
+        "id",
+        "machineId",
+        "scheduledDate",
+        "taskType",
+        "description",
+        "assignedTechnicianId",
+        "status"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the system (Admin, Technician, Teacher).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user within the system (e.g., Admin, Technician, Teacher)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "clusterIds": {
+          "type": "array",
+          "description": "List of cluster IDs the user is assigned to.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "role",
+        "name"
+      ]
+    },
+    "Cluster": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Cluster",
+      "type": "object",
+      "description": "Represents a cluster of machines.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Cluster entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the cluster."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the cluster."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a generated report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Report entity."
+        },
+        "machineId": {
+          "type": "string",
+          "description": "Reference to Machine. (Relationship: Machine 1:N Report). The machine this report is about."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Report). The user that created the report."
+        },
+        "reportType": {
+          "type": "string",
+          "description": "The type of report that was generated."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the report was generated.",
+          "format": "date-time"
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "The URL of the generated report.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "machineId",
+        "userId",
+        "reportType",
+        "timestamp",
+        "fileUrl"
+      ]
+    },
+    "UsageLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UsageLog",
+      "type": "object",
+      "description": "Represents a log of machine usage by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UsageLog entity."
+        },
+        "machineId": {
+          "type": "string",
+          "description": "The machine that was used."
+        },
+        "clusterId": {
+          "type": "string",
+          "description": "The cluster the machine belongs to."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user who used the machine."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp of when the session started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp of when the session ended.",
+          "format": "date-time"
+        },
+        "durationInHours": {
+          "type": "number",
+          "description": "The duration of the usage session in hours."
+        }
+      },
+      "required": [
+        "id",
+        "machineId",
+        "clusterId",
+        "userId",
+        "startTime"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Each document is private to the user identified by {userId}.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clusters/{clusterId}",
+        "definition": {
+          "entityName": "Cluster",
+          "schema": {
+            "$ref": "#/backend/entities/Cluster"
+          },
+          "description": "Stores cluster information.",
+          "params": [
+            {
+              "name": "clusterId",
+              "description": "The unique identifier for the cluster."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clusters/{clusterId}/machines/{machineId}",
+        "definition": {
+          "entityName": "Machine",
+          "schema": {
+            "$ref": "#/backend/entities/Machine"
+          },
+          "description": "Stores machine information. Includes denormalized 'clusterId' for authorization independence.",
+          "params": [
+            {
+              "name": "clusterId",
+              "description": "The unique identifier for the cluster."
+            },
+            {
+              "name": "machineId",
+              "description": "The unique identifier for the machine."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clusters/{clusterId}/machines/{machineId}/sensorData/{sensorDataId}",
+        "definition": {
+          "entityName": "SensorData",
+          "schema": {
+            "$ref": "#/backend/entities/SensorData"
+          },
+          "description": "Stores sensor data readings for each machine.",
+          "params": [
+            {
+              "name": "clusterId",
+              "description": "The unique identifier for the cluster."
+            },
+            {
+              "name": "machineId",
+              "description": "The unique identifier for the machine."
+            },
+            {
+              "name": "sensorDataId",
+              "description": "The unique identifier for the sensor data."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clusters/{clusterId}/machines/{machineId}/alerts/{alertId}",
+        "definition": {
+          "entityName": "Alert",
+          "schema": {
+            "$ref": "#/backend/entities/Alert"
+          },
+          "description": "Stores alerts generated for each machine.",
+          "params": [
+            {
+              "name": "clusterId",
+              "description": "The unique identifier for the cluster."
+            },
+            {
+              "name": "machineId",
+              "description": "The unique identifier for the machine."
+            },
+            {
+              "name": "alertId",
+              "description": "The unique identifier for the alert."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clusters/{clusterId}/machines/{machineId}/maintenanceTasks/{maintenanceTaskId}",
+        "definition": {
+          "entityName": "MaintenanceTask",
+          "schema": {
+            "$ref": "#/backend/entities/MaintenanceTask"
+          },
+          "description": "Stores maintenance tasks scheduled for each machine.",
+          "params": [
+            {
+              "name": "clusterId",
+              "description": "The unique identifier for the cluster."
+            },
+            {
+              "name": "machineId",
+              "description": "The unique identifier for the machine."
+            },
+            {
+              "name": "maintenanceTaskId",
+              "description": "The unique identifier for the maintenance task."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clusters/{clusterId}/machines/{machineId}/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Stores reports generated for each machine.",
+          "params": [
+            {
+              "name": "clusterId",
+              "description": "The unique identifier for the cluster."
+            },
+            {
+              "name": "machineId",
+              "description": "The unique identifier for the machine."
+            },
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clusters/{clusterId}/machines/{machineId}/usageLogs/{usageLogId}",
+        "definition": {
+          "entityName": "UsageLog",
+          "schema": {
+            "$ref": "#/backend/entities/UsageLog"
+          },
+          "description": "Stores machine usage logs created by users.",
+          "params": [
+            {
+              "name": "clusterId",
+              "description": "The unique identifier for the cluster."
+            },
+            {
+              "name": "machineId",
+              "description": "The unique identifier for the machine."
+            },
+            {
+              "name": "usageLogId",
+              "description": "The unique identifier for the usage log."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support the LabGuard Pro application's requirements for real-time monitoring, role-based access control, AI-powered features, and downloadable reports. It prioritizes authorization independence and structural segregation to ensure secure and scalable data management.\n\n**Authorization Independence:** The design denormalizes relevant authorization data to avoid hierarchical `get()` calls in security rules. For example, the `/machines/{machineId}/sensorData` collection stores sensor data. The `clusterId` is denormalized from the parent `/clusters/{clusterId}` document into each machine document, thus granting the ability to make cluster-level authorization rules without complex `get()` calls.\n\n**Structural Segregation:** Data with different access requirements are stored in separate collections to simplify security rules. User profiles are stored under `/users/{userId}`, ensuring private user data.  Machine data is segregated under `/clusters/{clusterId}/machines/{machineId}`.\n\n**Access Modeling:**\n*   **Path-Based Ownership:** The `/users/{userId}` collection utilizes path-based ownership for user profiles, which are private to each user.\n*   **Hierarchical Paths for User-Owned Data:** Sensor data, alerts, maintenance tasks and reports, are organized under the corresponding machine, allowing efficient querying and management of related data.\n*   **Collaborative Data:** The membership map approach is not applicable here as the app does not have collaborative entities as such. The role based access relies on the 'role' field in the user document.\n*   **Global Roles:** The application relies on the `role` field in the user document to determine user roles (Admin, Technician, Teacher). The security rules will enforce role-based access to the appropriate resources. For example, Admin users will have broad access, while Technicians and Teachers will have more limited access based on their roles and assigned clusters.\n\n**QAPs (Rules are not Filters):** The structure enables secure `list` operations by segregating data based on access needs. For example, technicians will have access only to machines in their assigned cluster(s) as enforced by the security rules on the `/clusters/{clusterId}/machines/{machineId}` path. The admin role will enable listing of all clusters and all machines.\n\n**Invariants:** Timestamps are included in sensor data, alerts and reports to maintain data integrity and enable chronological ordering. Ownership is maintained via `machineId` and `userId` fields in relevant documents."
+  }
+}

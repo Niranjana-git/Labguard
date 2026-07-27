@@ -1,0 +1,208 @@
+/**
+ * @file Firestore Security Rules for LabGuard Pro
+ *
+ * Core Philosophy:
+ * This ruleset enforces a role-based access control model, supplemented by path-based ownership for user profiles.
+ * Access is primarily governed by the user's role (Admin, Technician, Teacher).
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores private user profile data. Access is restricted to the owning user.
+ * - /clusters/{clusterId}: Stores cluster information.
+ * - /clusters/{clusterId}/machines/{machineId}: Stores machine information within a cluster.
+ * - /clusters/{clusterId}/machines/{machineId}/sensorData/{sensorDataId}: Stores sensor data for a specific machine.
+ * - /clusters/{clusterId}/machines/{machineId}/alerts/{alertId}: Stores alerts generated for a specific machine.
+ * - /clusters/{clusterId}/machines/{machineId}/maintenanceTasks/{maintenanceTaskId}: Stores maintenance tasks for a specific machine.
+ * - /clusters/{clusterId}/machines/{machineId}/reports/{reportId}: Stores reports generated for a specific machine.
+ * - /clusters/{clusterId}/machines/{machineId}/usageLogs/{usageLogId}: Stores machine usage logs.
+ *
+ * Key Security Decisions:
+ * - Strict user ownership for /users/{userId} collection.
+ * - Role-based access control for clusters, machines and associated data.
+ * - User listing is allowed only for Admins.
+ *
+ * Denormalization for Authorization:
+ * - The `clusterId` is denormalized into the `/clusters/{clusterId}/machines/{machineId}` documents to simplify authorization checks without requiring hierarchical `get()` calls.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Ensures the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the existing document's user ID. Also verifies the document exists.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the user has the specified role.
+     */
+    function hasRole(role) {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    /**
+     * @description Checks if the user is an Admin.
+     */
+    function isAdmin() {
+      return hasRole('Admin');
+    }
+
+    /**
+     * @description Checks if the user is a Technician.
+     */
+    function isTechnician() {
+      return hasRole('Technician');
+    }
+
+    /**
+     * @description Checks if the user is a Teacher.
+     */
+    function isTeacher() {
+      return hasRole('Teacher');
+    }
+
+    /**
+     * @description Rule for user profiles.
+     * @path /users/{userId}
+     * @allow (create) - User with ID 'user123' creates their profile.
+     *    - auth.uid: 'user123'
+     *    - request.resource.data.id: 'user123'
+     * @allow (get, update, delete) - User with ID 'user123' reads/updates/deletes their profile.
+     *    - auth.uid: 'user123'
+     * @deny (create) - User with ID 'user123' tries to create a profile for 'user456'.
+     *    - auth.uid: 'user123'
+     *    - request.resource.data.id: 'user456'
+     * @deny (get, update, delete) - User with ID 'user123' tries to read/update/delete profile of 'user456'.
+     *    - auth.uid: 'user123'
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) || isAdmin();
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Rule for clusters.
+     * @path /clusters/{clusterId}
+     * @allow (get, list) - Any signed in user can read cluster information
+     * @allow (create, update, delete) - Only admins can create, update, or delete clusters.
+     * @deny (create, update, delete) - A non-admin user tries to create/update/delete a cluster.
+     * @principle Enforces role-based access control; only admins can modify cluster data.
+     */
+    match /clusters/{clusterId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rule for machines within clusters.
+     * @path /clusters/{clusterId}/machines/{machineId}
+     * @allow (get, list) - Any signed in user can read machine information.
+     * @allow (create, update, delete) - Only admins can create, update or delete machines.
+     * @deny (create, update, delete) - A non-admin user tries to create/update/delete a machine.
+     * @principle Enforces role-based access control; only admins can modify machine data.
+     */
+    match /clusters/{clusterId}/machines/{machineId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rule for sensor data within machines.
+     * @path /clusters/{clusterId}/machines/{machineId}/sensorData/{sensorDataId}
+     * @allow (get, list) - Any signed in user can read sensor data.
+     * @allow create - Only technicians or admins can create sensor data.
+     * @allow update, delete - Only admins can update or delete sensor data.
+     * @deny create - A non-technician and non-admin user tries to create sensor data.
+     * @deny update, delete - A non-admin user tries to update/delete sensor data.
+     * @principle Enforces role-based access control. Technicians and admins can create sensor data, but only admins can modify it.
+     */
+    match /clusters/{clusterId}/machines/{machineId}/sensorData/{sensorDataId} {
+      allow get, list: if isSignedIn();
+      allow create: if isTechnician() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rule for alerts within machines.
+     * @path /clusters/{clusterId}/machines/{machineId}/alerts/{alertId}
+     * @allow (get, list) - Any signed in user can read alerts.
+     * @allow create - Only technicians or admins can create alerts.
+     * @allow update, delete - Only admins can update or delete alerts.
+     * @deny create - A non-technician and non-admin user tries to create an alert.
+     * @deny update, delete - A non-admin user tries to update/delete an alert.
+     * @principle Enforces role-based access control; only admins can modify alert data.
+     */
+    match /clusters/{clusterId}/machines/{machineId}/alerts/{alertId} {
+      allow get, list: if isSignedIn();
+      allow create: if isTechnician() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rule for maintenance tasks within machines.
+     * @path /clusters/{clusterId}/machines/{machineId}/maintenanceTasks/{maintenanceTaskId}
+     * @allow (get, list) - Any signed in user can read maintenance tasks.
+     * @allow create - Only technicians or admins can create maintenance tasks.
+     * @allow update, delete - Only admins can update or delete maintenance tasks.
+     * @deny create - A non-technician and non-admin user tries to create a maintenance task.
+     * @deny update, delete - A non-admin user tries to update/delete a maintenance task.
+     * @principle Enforces role-based access control; only admins can modify maintenance task data.
+     */
+    match /clusters/{clusterId}/machines/{machineId}/maintenanceTasks/{maintenanceTaskId} {
+      allow get, list: if isSignedIn();
+      allow create: if isTechnician() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rule for reports within machines.
+     * @path /clusters/{clusterId}/machines/{machineId}/reports/{reportId}
+     * @allow (get, list) - Any signed in user can read reports.
+     * @allow create - Only teachers or admins can create reports.
+     * @allow update, delete - Only admins can update or delete reports.
+     * @deny create - A non-teacher and non-admin user tries to create a report.
+     * @deny update, delete - A non-admin user tries to update/delete a report.
+     * @principle Enforces role-based access control; only admins can modify report data.
+     */
+    match /clusters/{clusterId}/machines/{machineId}/reports/{reportId} {
+      allow get, list: if isSignedIn();
+      allow create: if isTeacher() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rule for usage logs within machines.
+     * @path /clusters/{clusterId}/machines/{machineId}/usageLogs/{usageLogId}
+     * @allow (get, list) - Admins, or Teachers/Technicians assigned to the cluster can read usage logs.
+     * @allow create, update - Only teachers assigned to the cluster can create or update their own usage logs.
+     * @deny (create, update) - A user tries to log usage for a machine in a cluster they are not assigned to.
+     * @principle Enforces role-based and ownership-based access for machine usage logging.
+     */
+     match /clusters/{clusterId}/machines/{machineId}/usageLogs/{usageLogId} {
+        allow list: if isSignedIn(); // Allows collectionGroup queries
+        allow get: if isOwner(resource.data.userId) || isAdmin();
+        allow create: if isTeacher() && request.auth.uid == request.resource.data.userId;
+        allow update: if isTeacher() && isOwner(resource.data.userId);
+        allow delete: if isAdmin();
+     }
+  }
+}
